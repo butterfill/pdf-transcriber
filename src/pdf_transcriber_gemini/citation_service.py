@@ -69,7 +69,7 @@ def _gemini_citations(
             response_format=[{"type": "text", "mime_type": "application/json", "schema": schema}],
             service_tier=tier,
             store=False,
-            timeout=900,
+            timeout=1800 if tier == "flex" else 900, # seconds
         )
         for attempt in range(3):
             try:

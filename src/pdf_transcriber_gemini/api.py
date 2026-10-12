@@ -98,7 +98,7 @@ def transcribe(pdf: Path, workspace: Path, *, standard: bool, prompt: str, schem
             response_format=[{"type": "text", "mime_type": "application/json", "schema": schema}],
             service_tier=tier,
             store=False,
-            timeout=900,  # seconds; Flex requests can sit in the queue
+            timeout=1800 if tier == "flex" else 900,  # seconds; Flex requests can sit in the queue
         )
         for attempt in range(3):
             try:
