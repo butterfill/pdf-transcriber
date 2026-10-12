@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pdf-transcriber-gemini"
+version = "0.5.2"
+description = "Transcribe academic PDFs with Gemini and discover citations with Gemini or Codex CLI."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "google-genai>=2.29.0,<3",
+    "pymupdf>=1.26,<2",
+    "prompt-toolkit>=3.0.50,<4",
+    "rich>=13.9,<15",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.9"]
+
+[project.scripts]
+pdf-transcriber = "pdf_transcriber_gemini.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pdf_transcriber_gemini = ["prompt.txt", "schema.json", "citations_prompt.txt", "citations_schema.json"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"

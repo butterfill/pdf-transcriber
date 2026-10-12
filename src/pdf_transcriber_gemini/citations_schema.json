@@ -1,0 +1,98 @@
+{
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "description": "Return 4."
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Copy SOURCE_ID exactly."
+    },
+    "references": {
+      "type": "array",
+      "description": "One bibliography entry per item, in printed order. IDs are inferred from array positions.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "l": {
+            "type": "integer",
+            "description": "1-based source line where this bibliography entry begins."
+          },
+          "a": {
+            "type": "string",
+            "description": "Short exact, unique snippet from the entry's first source line."
+          },
+          "label": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "editors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "year": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "container_title": {
+            "type": "string"
+          },
+          "volume": {
+            "type": "string"
+          },
+          "issue": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "doi": {
+            "type": "string"
+          },
+          "isbn": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "l",
+          "a"
+        ]
+      }
+    },
+    "mentions": {
+      "type": "array",
+      "description": "Compact strings LINE|TEXT. Python resolves bibliography identity. One row per distinct citation string per source line.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "problems": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "source_id",
+    "references",
+    "mentions"
+  ]
+}

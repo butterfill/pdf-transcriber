@@ -1,0 +1,9 @@
+schema: 1
+name: PDF Transcriber Gemini
+description: Convert academic PDFs to Markdown and extracted figures with the Gemini Developer API.
+status: experimental
+tags:
+  - python
+  - gemini
+  - pdf
+  - transcription

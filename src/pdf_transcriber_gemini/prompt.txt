@@ -1,0 +1,38 @@
+TASK: Convert the attached PDF to Markdown. Preserve headings, footnotes (use [^NN] Markdown-style footnotes), paragraphs, tables, *italics*, and other text formatting.
+
+TRANSCRIPTION REQUIREMENT: Do not use extracted PDF text as a transcription source: even the best tools produce results that are well below the standard I require. Instead read the visible PDF pages yourself so that you capture all the quirks. The visually rendered pages are authoritative; if the PDF's text layer disagrees with what is visible, prefer what is visible.
+
+Include the abstract, title and the full reference list.
+
+Drop headers and footers. Also drop boilerplate and other extraneous material including (but not limited to) acknowledgements, funding or grants, journal information. As the file is linked to a bibliographic database, you should also drop all author, affiliation details and other citation information other than the title of the article.
+
+Some sources include a cover page with details of an archive or publisher. This should be ignored (the information there will be stored in database entries for this source, not in the Markdown itself).
+
+Do not use bold or italics for entire headings (but preserve for partial headings).
+
+PAGE NUMBERS: If possible, where a page starts include comments with page numbers like this: <!-- pdf page 7 | article page 13 -->. Note that 'article page' may not be available; in that case, include 'pdf page' only. Do not include page information unless you are certain it is correct. Where a page break occurs within a paragraph, put the page number comment into the text so that the paragraph does not break. Where a page break occurs between two paragraphs, put the page break comment on its own line with at least one blank line above and below. PDF page numbers are 1-based, counting from the first page of the PDF, even if the first page is a cover to be omitted.
+
+FIGURES: If there are figures or images which are part of the substance of the source (so not, for example, journal logos), identify them for extraction by a separate local script. In the Markdown, put the exact placeholder <!-- FIGURE:fig_1 --> (using a different stable ID for each figure), on its own line where the figure should be referenced. Keep the original figure caption, if any, as text adjacent to the placeholder. Where necessary, please move figure placeholders and captions to avoid breaking paragraphs. For each substantive figure, add an entry to the "figures" JSON array with its ID, the 1-based PDF page on which it appears, a short description, and a bounding box around the visible figure itself, excluding its caption and unrelated text. For multi-panel figures, one box should enclose the entire substantive figure. Do not include logos, decorative material or publisher markings. Do not invent images. You are not being asked to extract image files yourself.
+
+The bounding box must be "box_2d": [ymin, xmin, ymax, xmax], measured against the whole visible page, with top-left origin and each value normalized to the range 0–1000. Include the complete figure without cutting off labels or axes. A local script will use these boxes to extract embedded raster images when possible, or render vector/composite figures using PyMuPDF at 4× resolution.
+
+EQUATIONS: If there are equations, use syntax that can be rendered with KaTeX. Be careful not to escape the $s that delimit equations.
+
+OUTPUT: Return ONLY one valid JSON object, not Markdown fences or commentary. Its structure must be:
+
+{
+  "markdown": "The complete transcription as one Markdown string, including the page comments, footnotes, figure placeholders and all references",
+  "figures": [
+    {
+      "id": "fig_1",
+      "pdf_page": 7,
+      "box_2d": [120, 130, 580, 900],
+      "description": "Short description of the substantive figure"
+    }
+  ],
+  "problems": []
+}
+
+The numbers in the example are illustrative only; determine the actual pages and boxes from the PDF. If no substantive figures appear, return "figures": []. Put any transcription difficulties, ambiguities or limits in the "problems" array rather than in the Markdown. Preserve complete Markdown inside the JSON string, escaping newline characters and quotation marks as JSON requires. Do not replace the full transcription with a summary, ellipses, or omissions.
+
+NO QUESTIONS: Do not stop to ask questions. Process the entire attached PDF and report the complete result.

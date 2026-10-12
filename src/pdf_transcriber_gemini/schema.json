@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "properties": {
+    "markdown": { "type": "string", "description": "Complete Markdown transcription of the PDF, with <!-- FIGURE:id --> placeholders" },
+    "figures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "description": "Unique ID such as fig_1; used in the Markdown figure placeholder" },
+          "pdf_page": { "type": "integer", "description": "1-based PDF page number" },
+          "box_2d": { "type": "array", "items": { "type": "number" }, "description": "[ymin,xmin,ymax,xmax], 0-1000 normalized against the visible page" },
+          "description": { "type": "string", "description": "A short description of this substantive figure" }
+        },
+        "required": ["id", "pdf_page", "box_2d", "description"]
+      }
+    },
+    "problems": { "type": "array", "items": { "type": "string" }, "description": "Any ambiguities, problems or limits, not part of the Markdown" }
+  },
+  "required": ["markdown", "figures", "problems"]
+}
