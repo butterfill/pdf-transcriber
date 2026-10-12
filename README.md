@@ -1,4 +1,4 @@
-# pdf-transcriber-gemini
+# pdf-transcriber
 
 An independently installable `uv` tool for transcribing academic PDFs into Markdown with
 **Gemini 3.8 Flash**. Keeps the successful AI Studio prompt, JSON schema, and figure
