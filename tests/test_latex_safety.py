@@ -2,7 +2,11 @@
 import json
 import pytest
 from pdf_transcriber_gemini.assembler import load_gemini_json
-from pdf_transcriber_gemini.latex_safety import recover_json_latex, latex_warnings
+from pdf_transcriber_gemini.latex_safety import (
+    latex_warnings,
+    recover_json_latex,
+    recover_json_markdown_asterisks,
+)
 
 
 def wrap_math(expr):
@@ -71,3 +75,69 @@ def test_control_chars_and_unbalanced_braces_detected():
 def test_raw_dollar_escape_not_a_math_delimiter():
     raw = r'{"markdown":"Price \\$5 and \text{word}; math $\beta$","figures":[],"problems":[]}'
     assert [e.command for e in recover_json_latex(raw)[1]] == [r'\beta']
+
+
+@pytest.mark.parametrize(("whitespace", "decoded"), [
+    (" ", " "),
+    (r"\n", "\n"),
+    (r"\r", "\r"),
+    (r"\t", "\t"),
+    (r"\f", "\f"),
+    (r"\u000b", "\v"),
+    (r"\u2003", "\u2003"),
+])
+def test_recover_markdown_asterisk_before_whitespace(tmp_path, capsys, whitespace, decoded):
+    raw = r'{"markdown":"*Arripidae*\*' + whitespace + r'","figures":[],"problems":[]}'
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(raw)
+    file = tmp_path / "response.json"
+    file.write_text(raw, encoding="utf-8")
+    data = load_gemini_json(file)
+    assert data["markdown"] == "*Arripidae*\\*" + decoded
+    assert file.read_text(encoding="utf-8") == raw
+    assert "Recovered 1 Markdown asterisk JSON escape" in capsys.readouterr().err
+
+
+def test_recover_multiple_asterisks_and_latex_together(tmp_path):
+    raw = r'{"markdown":"$$\frac{1}{2}$$ then \* and \*\n","figures":[],"problems":[]}'
+    file = tmp_path / "response.json"
+    file.write_text(raw, encoding="utf-8")
+    assert load_gemini_json(file)["markdown"] == "$$\\frac{1}{2}$$ then \\* and \\*\n"
+    assert file.read_text(encoding="utf-8") == raw
+
+
+@pytest.mark.parametrize("raw", [
+    r'{"markdown":"before\*after","figures":[],"problems":[]}',
+    r'{"markdown":"before\*\\n","figures":[],"problems":[]}',
+    r'{"markdown":"before\*","figures":[],"problems":[]}',
+    r'{"markdown":"good","figures":[],"problems":["before\* "]}',
+    r'{"markdown":"good","figures":[{"description":"before\* "}],"problems":[]}',
+    r'{"other":{"markdown":"before\* "},"markdown":"good","figures":[],"problems":[]}',
+])
+def test_no_asterisk_recovery_for_nonwhitespace_or_other_fields(tmp_path, raw):
+    assert recover_json_markdown_asterisks(raw) == (raw, [])
+    file = tmp_path / "invalid.json"
+    file.write_text(raw, encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid JSON"):
+        load_gemini_json(file)
+
+
+def test_already_json_escaped_asterisk_is_unchanged(tmp_path, capsys):
+    raw = json.dumps({"markdown": r"*Arripidae*\* ", "figures": [], "problems": []})
+    assert recover_json_markdown_asterisks(raw) == (raw, [])
+    file = tmp_path / "valid.json"
+    file.write_text(raw, encoding="utf-8")
+    assert load_gemini_json(file)["markdown"] == r"*Arripidae*\* "
+    assert "Markdown asterisk JSON escape" not in capsys.readouterr().err
+
+
+def test_literal_unescaped_json_newline_remains_invalid(tmp_path):
+    raw = r'{"markdown":"before\*' + "\n" + r'","figures":[],"problems":[]}'
+    repaired, offsets = recover_json_markdown_asterisks(raw)
+    assert len(offsets) == 1
+    with pytest.raises(json.JSONDecodeError):
+        json.loads(repaired)
+    file = tmp_path / "invalid-newline.json"
+    file.write_text(raw, encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid JSON"):
+        load_gemini_json(file)

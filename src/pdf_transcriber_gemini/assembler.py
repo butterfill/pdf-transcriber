@@ -13,7 +13,12 @@ from urllib.parse import quote
 
 import pymupdf
 
-from .latex_safety import latex_warnings, recover_json_latex, repair_summary
+from .latex_safety import (
+    latex_warnings,
+    recover_json_latex,
+    recover_json_markdown_asterisks,
+    repair_summary,
+)
 from .reporting import emit
 
 FIGURE_MARKER = re.compile(r"<!--\s*FIGURE:([A-Za-z0-9_-]+)\s*-->")
@@ -36,6 +41,7 @@ def load_gemini_json(path: Path) -> dict:
     if match:
         raw = match.group(1)
     repaired, repairs = recover_json_latex(raw)
+    repaired, asterisk_repairs = recover_json_markdown_asterisks(repaired)
     try:
         data = json.loads(repaired)
     except json.JSONDecodeError as exc:
@@ -52,6 +58,9 @@ def load_gemini_json(path: Path) -> dict:
         fail("JSON needs an array of strings called 'problems' (use [] if none).")
     if repairs:
         emit("warning", f"WARNING: {path.name}: {repair_summary(repairs)}")
+    if asterisk_repairs:
+        emit("warning", f"WARNING: {path.name}: Recovered {len(asterisk_repairs)} "
+             "Markdown asterisk JSON escape(s) before whitespace; raw JSON unchanged.")
     warnings = latex_warnings(data["markdown"])
     for warning in warnings[:20]:
         emit("warning", f"WARNING: {path.name}: LaTeX review at Markdown "

@@ -125,8 +125,17 @@ Before JSON decoding, the importer recognizes known LaTeX commands within
 `$...$` and `$$...$$` in the top-level `markdown` JSON string and repairs
 missing *JSON* backslash escapes. This includes syntactically valid but damaging
 sequences such as `\\text` and `\\beta`. It **does not rewrite** the source
-JSON file, figure metadata, prose outside math, or unknown commands. If JSON
-remains invalid, the usual recovery/error path applies.
+JSON file or figure metadata. LaTeX recovery does not modify prose outside
+math or unknown commands.
+
+Separately, malformed JSON `\*` immediately followed by Markdown whitespace
+in the top-level `markdown` string is recovered as JSON `\\*`, preserving
+the escaped literal asterisk. This includes spaces and JSON-encoded newline
+(`\n`), tab (`\t`), carriage return (`\r`), form feed (`\f`), and Unicode
+whitespace (e.g. `\u2003`). Already-correct `\\*`, `\*` before non-whitespace,
+and other JSON fields are left alone. The original JSON file is untouched.
+Literal unescaped control characters (such as a raw newline within a JSON
+string) remain invalid. If JSON remains invalid, the usual error path applies.
 
 After parsing, warning-only checks identify unexpected control characters,
 tabs inside math, suspicious doubled commands, escaped subscripts and

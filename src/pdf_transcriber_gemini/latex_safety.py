@@ -195,6 +195,52 @@ def recover_json_latex(raw: str) -> tuple[str, list[Repair]]:
     return raw[:start] + "".join(fragments) + raw[end:], repairs
 
 
+def _json_whitespace_at(body: str, position: int) -> bool:
+    """Whether JSON source at position starts a whitespace Markdown character."""
+    if position >= len(body):
+        return False
+    char = body[position]
+    if char.isspace():
+        return True
+    if char != "\\" or position + 1 >= len(body):
+        return False
+    escaped = body[position + 1]
+    if escaped in "nrtf":
+        return True
+    if escaped == "u" and re.fullmatch(r"[0-9a-fA-F]{4}", body[position + 2:position + 6]):
+        return chr(int(body[position + 2:position + 6], 16)).isspace()
+    return False
+
+
+def recover_json_markdown_asterisks(raw: str) -> tuple[str, list[int]]:
+    """Recover malformed JSON \\* before whitespace in top-level Markdown only.
+
+    Replace the invalid JSON escape \\* with \\\\* so decoding preserves
+    the Markdown-escaped literal asterisk. The raw response is not modified.
+    """
+    bounds = _markdown_bounds(raw)
+    if bounds is None:
+        return raw, []
+    start, end = bounds
+    body = raw[start:end]
+    offsets: list[int] = []
+    fragments: list[str] = []
+    cursor = index = 0
+    while index + 1 < len(body):
+        if body[index] != "\\":
+            index += 1
+            continue
+        if body[index + 1] == "*" and _json_whitespace_at(body, index + 2):
+            fragments.extend((body[cursor:index], "\\"))
+            offsets.append(start + index)
+            cursor = index
+        index += 2  # Skip valid JSON escapes, including already-doubled backslashes.
+    if not offsets:
+        return raw, []
+    fragments.append(body[cursor:])
+    return raw[:start] + "".join(fragments) + raw[end:], offsets
+
+
 def _line_column(text: str, offset: int) -> tuple[int, int]:
     line = text.count("\n", 0, offset) + 1
     prev = text.rfind("\n", 0, offset)
