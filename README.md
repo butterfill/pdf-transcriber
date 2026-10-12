@@ -115,6 +115,28 @@ the source JSON intact, refuses to overwrite Markdown or existing figure
 directories, and cleans scratch files on success or failure. Use
 `pdf-transcriber find-citations 'Article.md'` separately if desired.
 
+## Conservative LaTeX escape recovery and validation
+
+The existing JSON transcription prompt and schema are unchanged. Automatic API
+conversions (including chunks and resumes), AI Studio imports and `--from-json`
+all pass through the same safety checks.
+
+Before JSON decoding, the importer recognizes known LaTeX commands within
+`$...$` and `$$...$$` in the top-level `markdown` JSON string and repairs
+missing *JSON* backslash escapes. This includes syntactically valid but damaging
+sequences such as `\\text` and `\\beta`. It **does not rewrite** the source
+JSON file, figure metadata, prose outside math, or unknown commands. If JSON
+remains invalid, the usual recovery/error path applies.
+
+After parsing, warning-only checks identify unexpected control characters,
+tabs inside math, suspicious doubled commands, escaped subscripts and
+unbalanced argument braces. They do not automatically rewrite mathematical
+content. Warnings include the Markdown line and column; automatic repairs
+are counted and reported. Review warnings before relying on mathematics
+in published transcriptions. Recovery is mechanical, not a correctness
+guarantee, and neither JSON recovery nor linting verifies an equation
+against the original PDF.
+
 ## Recovery
 
 During execution, a hidden `.pdf-transcriber-<random>/` working directory is created
