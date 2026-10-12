@@ -13,6 +13,9 @@ from urllib.parse import quote
 
 import pymupdf
 
+from .latex_safety import latex_warnings, recover_json_latex, repair_summary
+from .reporting import emit
+
 FIGURE_MARKER = re.compile(r"<!--\s*FIGURE:([A-Za-z0-9_-]+)\s*-->")
 ID_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]*\Z")
 
@@ -32,8 +35,9 @@ def load_gemini_json(path: Path) -> dict:
     match = re.fullmatch(r"```(?:json)?\s*\n(.*?)\n```", raw, re.DOTALL | re.I)
     if match:
         raw = match.group(1)
+    repaired, repairs = recover_json_latex(raw)
     try:
-        data = json.loads(raw)
+        data = json.loads(repaired)
     except json.JSONDecodeError as exc:
         fail(f"{path.name}: invalid JSON ({exc}). Save only the model's JSON response.")
     if not isinstance(data, dict):
@@ -46,6 +50,15 @@ def load_gemini_json(path: Path) -> dict:
         isinstance(x, str) for x in data["problems"]
     ):
         fail("JSON needs an array of strings called 'problems' (use [] if none).")
+    if repairs:
+        emit("warning", f"WARNING: {path.name}: {repair_summary(repairs)}")
+    warnings = latex_warnings(data["markdown"])
+    for warning in warnings[:20]:
+        emit("warning", f"WARNING: {path.name}: LaTeX review at Markdown "
+             f"{warning.line}:{warning.column}: {warning.message}")
+    if len(warnings) > 20:
+        emit("warning", f"WARNING: {path.name}: {len(warnings) - 20} further "
+             "LaTeX warnings suppressed")
     return data
 
 
